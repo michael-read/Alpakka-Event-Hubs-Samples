@@ -99,6 +99,13 @@ public class UserEventBatchProducerApp {
                             .map(entrySet -> {
                                 List<EventData> events = entrySet.getValue().stream().map(e -> new EventData(e.toByteArray())).toList();
                                 return ProducerMessage.batch(events);
+/*
+                                For Round Robin partitioning you could use the following instead of the pain .batch(events) above:
+
+                                return ProducerMessage.batchWithPartitioning(events, ProducerMessage.roundRobinPartitioning());
+
+                                However, it worth noting that if there's a need to maintain message ordering this is probably not the way to go.
+*/
                             })
                             .runWith(producerSink.async(), context.getSystem());
 

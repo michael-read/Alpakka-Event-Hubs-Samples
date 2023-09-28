@@ -1,1 +1,1 @@
-# Akka (Alpakka) Event Hubs
+# Akka Alpakka Azure Event Hubs Samples

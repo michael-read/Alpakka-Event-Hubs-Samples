@@ -90,10 +90,10 @@ public class UserEventPartitionedBatchProducerApp {
                             UniformFanOutShape<UserPurchaseProto, UserPurchaseProto> partition =
                                     builder.add(
                                             Partition.create(
-                                                    UserPurchaseProto.class, 2, userPurchase -> (Math.abs(userPurchase.getUserId().hashCode()) % numPartitions)));
+                                                    UserPurchaseProto.class, numPartitions, userPurchase -> (Math.abs(userPurchase.getUserId().hashCode()) % numPartitions)));
                             builder.from(builder.add(source)).viaFanOut(partition);
                             for (int i = 0; i < numPartitions; i++) {
-                                builder.from(partition.out(i)).to(builder.add(createPartitionedFlow(producerSettings, producerClient, batchedTimeWindowSeconds, String.valueOf(i))));
+                                builder.from(partition.out(i)).to(builder.add(createPartitionedSink(producerSettings, producerClient, batchedTimeWindowSeconds, String.valueOf(i))));
                             }
                             return ClosedShape.getInstance();
                         }))
@@ -103,7 +103,7 @@ public class UserEventPartitionedBatchProducerApp {
         });
     }
 
-    Sink<UserPurchaseProto, CompletionStage<Done>> createPartitionedFlow(ProducerSettings producerSettings, EventHubProducerAsyncClient producerClient, int batchedTimeWindowSeconds, String partition) {
+    Sink<UserPurchaseProto, CompletionStage<Done>> createPartitionedSink(ProducerSettings producerSettings, EventHubProducerAsyncClient producerClient, int batchedTimeWindowSeconds, String partition) {
         return Flow.<UserPurchaseProto>create()
             .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length, Duration.ofSeconds(batchedTimeWindowSeconds))
             .mapConcat(eList -> {

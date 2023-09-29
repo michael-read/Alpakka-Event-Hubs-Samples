@@ -5,8 +5,7 @@ import akka.NotUsed;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.stream.ClosedShape;
-import akka.stream.UniformFanOutShape;
+import akka.stream.*;
 import akka.stream.alpakka.azure.eventhubs.ClientFromConfig;
 import akka.stream.alpakka.azure.eventhubs.ProducerMessage;
 import akka.stream.alpakka.azure.eventhubs.javadsl.Producer;
@@ -83,11 +82,11 @@ public class UserEventPartitionedBatchProducerApp {
 
                     });
 
-            // Primary Stream
+/*            // Primary Stream
             RunnableGraph.fromGraph(
                 GraphDSL.create(
                         builder -> {
-                            UniformFanOutShape<UserPurchaseProto, UserPurchaseProto> partition =
+                            final UniformFanOutShape<UserPurchaseProto, UserPurchaseProto> partition =
                                     builder.add(
                                             Partition.create(
                                                     UserPurchaseProto.class, numPartitions, userPurchase -> (Math.abs(userPurchase.getUserId().hashCode()) % numPartitions)));
@@ -97,12 +96,68 @@ public class UserEventPartitionedBatchProducerApp {
                             }
                             return ClosedShape.getInstance();
                         }))
-                    .run(context.getSystem());
+                    .run(context.getSystem());*/
+
+
+            final RunnableGraph<CompletionStage<Done>> runnableGraph =
+                    RunnableGraph.fromGraph(
+                            GraphDSL.create(
+                                    createProducerSink(producerSettings, producerClient),
+                                    (builder, out) -> {
+                                        final UniformFanOutShape<UserPurchaseProto, UserPurchaseProto> partitions =
+                                                builder.add(
+                                                        Partition.create(
+                                                                UserPurchaseProto.class, numPartitions, userPurchase -> (Math.abs(userPurchase.getUserId().hashCode()) % numPartitions)));
+                                        for (int i = 0; i < numPartitions; i++) {
+                                            builder.from(partitions.out(i))
+                                                    .via(builder.add(createPartitionedFlow(batchedTimeWindowSeconds, String.valueOf(i))));
+                                        }
+
+                                        final Outlet<UserPurchaseProto> graphSource = builder.add(source).out();
+
+                                        final UniformFanInShape<ProducerMessage.Envelope<NotUsed>, ProducerMessage.Envelope<NotUsed>> merge
+                                                = builder.add(Merge.create(numPartitions));
+
+                                        builder
+                                            .from(graphSource)
+                                            .viaFanOut(partitions)
+                                            .viaFanIn(merge)
+                                            .to(out); // to() expects a SinkShape
+
+                                        return ClosedShape.getInstance();
+                                    }
+                            )
+                    );
+
+            CompletionStage<Done> done  = runnableGraph.run(context.getSystem());
+            done.thenRun (() -> context.getSystem().terminate());
 
             return Behaviors.empty();
         });
     }
 
+    // Event Hubs Producer Sink
+    Sink<ProducerMessage.Envelope<NotUsed>, CompletionStage<Done>> createProducerSink(ProducerSettings producerSettings, EventHubProducerAsyncClient producerClient) {
+        return Flow.<ProducerMessage.Envelope<NotUsed>>create()
+                .via(Producer.flow(producerSettings, producerClient))
+                .toMat(Sink.ignore(), Keep.right());
+    }
+
+    Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> createPartitionedFlow(int batchedTimeWindowSeconds, String partition) {
+        return Flow.<UserPurchaseProto>create()
+                .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length, Duration.ofSeconds(batchedTimeWindowSeconds))
+                .mapConcat(eList -> {
+                    return eList.stream()
+                            .collect(Collectors.groupingBy(e -> e.getUserId()))
+                            .entrySet();
+                })
+                .map(entrySet -> {
+                    List<EventData> events = entrySet.getValue().stream().map(e -> new EventData(e.toByteArray())).toList();
+                    return ProducerMessage.batchWithPartitioning(events, ProducerMessage.explicitPartitioning(partition));
+                });
+    }
+
+/*
     Sink<UserPurchaseProto, CompletionStage<Done>> createPartitionedSink(ProducerSettings producerSettings, EventHubProducerAsyncClient producerClient, int batchedTimeWindowSeconds, String partition) {
         return Flow.<UserPurchaseProto>create()
             .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length, Duration.ofSeconds(batchedTimeWindowSeconds))
@@ -118,6 +173,7 @@ public class UserEventPartitionedBatchProducerApp {
             .via(Producer.flow(producerSettings, producerClient))
             .toMat(Sink.ignore(),Keep.right());
     }
+*/
 
     public static void main(String[] args) {
         ActorSystem<NotUsed> system = ActorSystem.create(createGuardian(), "UserEventPartitionedBatchProducerApp");

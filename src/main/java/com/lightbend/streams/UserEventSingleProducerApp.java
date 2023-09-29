@@ -1,4 +1,4 @@
-package com.lightbend.actors;
+package com.lightbend.streams;
 
 import akka.Done;
 import akka.NotUsed;

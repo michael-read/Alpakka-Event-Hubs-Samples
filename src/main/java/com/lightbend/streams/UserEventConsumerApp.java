@@ -1,4 +1,4 @@
-package com.lightbend.actors;
+package com.lightbend.streams;
 
 import akka.Done;
 import akka.NotUsed;
@@ -12,14 +12,14 @@ import akka.stream.alpakka.azure.eventhubs.javadsl.CheckpointSettings;
 import akka.stream.alpakka.azure.eventhubs.javadsl.Checkpointer;
 import akka.stream.alpakka.azure.eventhubs.javadsl.Consumer;
 import akka.stream.alpakka.azure.eventhubs.javadsl.ConsumerSettings;
-import akka.stream.javadsl.FlowWithContext;
 import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.SourceWithContext;
-import com.azure.messaging.eventhubs.EventData;
+import akka.stream.javadsl.Source;
+import akka.stream.javadsl.Flow;
 import com.azure.messaging.eventhubs.EventProcessorClientBuilder;
 import com.azure.messaging.eventhubs.checkpointstore.blob.BlobCheckpointStore;
 import com.azure.storage.blob.BlobContainerAsyncClient;
 import com.azure.storage.blob.BlobContainerClientBuilder;
+import com.lightbend.models.CustomElementWrapper;
 import com.lightbend.serialization.UserPurchaseProto;
 import com.typesafe.config.Config;
 import org.slf4j.Logger;
@@ -28,13 +28,13 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class UserEventConsumerWithContextApp {
-    private static final Logger log = LoggerFactory.getLogger(UserEventConsumerWithContextApp.class);
+public class UserEventConsumerApp {
+    private static final Logger log = LoggerFactory.getLogger(UserEventConsumerApp.class);
 
-    private UserEventConsumerWithContextApp() {}
+    private UserEventConsumerApp() {}
 
     public static Behavior<NotUsed> createGuardian() {
-        return Behaviors.setup(context -> new UserEventConsumerWithContextApp().init());
+        return Behaviors.setup(context -> new UserEventConsumerApp().init());
     }
 
     private Behavior<NotUsed> init() {
@@ -60,23 +60,26 @@ public class UserEventConsumerWithContextApp {
 
             AtomicLong counter = new AtomicLong(0L);
 
-            SourceWithContext<EventData, Checkpointable, Consumer.Control> source =
-                    Consumer.sourceWithCheckpointableContext(consumerSettings, sdkClientBuilder, checkpointSettings, checkpointStore);
+            Source<CustomElementWrapper, Consumer.Control> source =
+                    Consumer.source(consumerSettings, sdkClientBuilder, checkpointSettings, checkpointStore, (eventData, checkpoint) -> {
+                        UserPurchaseProto userPurchase = UserPurchaseProto.parseFrom(eventData.getBody());
+                        return new CustomElementWrapper(userPurchase, checkpoint);
+                    });
 
-            FlowWithContext<EventData, Checkpointable, EventData, Checkpointable, NotUsed> flow =
-                    FlowWithContext.<EventData, Checkpointable>create().map(element -> {
-                        UserPurchaseProto userPurchase = UserPurchaseProto.parseFrom(element.getBody());
+            Flow<CustomElementWrapper, Checkpointable, NotUsed> flow =
+                    Flow.<CustomElementWrapper>create().map(element -> {
                         if (log.isDebugEnabled() && (counter.incrementAndGet() % 100000) == 0) {
+                            UserPurchaseProto userPurchase = element.userPurchaseProto();
                             log.debug("received purchase evnet for user {} Product {} Qty {}, Price {}",
                                     userPurchase.getUserId(), userPurchase.getProduct(), userPurchase.getQuantity(), userPurchase.getPrice());
                         }
                         // TODO: do something with the userPurchase here
-                        return element;
+                        return element.checkpointable();
                     });
 
             Pair<Consumer.Control, CompletionStage<Done>> result = source
                     .via(flow)
-                    .toMat(Checkpointer.sinkWithCheckpointableContext(checkpointSettings), Keep.both())
+                    .toMat(Checkpointer.sink(checkpointSettings), Keep.both())
                     .run(context.getSystem());
 
             // tear down
@@ -89,7 +92,7 @@ public class UserEventConsumerWithContextApp {
     }
 
     public static void main(String[] args) {
-        ActorSystem<NotUsed> system = ActorSystem.create(createGuardian(), "UserEventConsumerWithContextApp");
+        ActorSystem<NotUsed> system = ActorSystem.create(createGuardian(), "UserEventConsumerApp");
         system.getWhenTerminated();
     }
 }

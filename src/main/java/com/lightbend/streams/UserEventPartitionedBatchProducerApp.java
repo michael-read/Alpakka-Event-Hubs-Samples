@@ -1,11 +1,14 @@
-package com.lightbend.actors;
+package com.lightbend.streams;
 
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.stream.*;
+import akka.stream.ClosedShape;
+import akka.stream.Outlet;
+import akka.stream.UniformFanInShape;
+import akka.stream.UniformFanOutShape;
 import akka.stream.alpakka.azure.eventhubs.ClientFromConfig;
 import akka.stream.alpakka.azure.eventhubs.ProducerMessage;
 import akka.stream.alpakka.azure.eventhubs.javadsl.Producer;
@@ -98,31 +101,42 @@ public class UserEventPartitionedBatchProducerApp {
                         }))
                     .run(context.getSystem());*/
 
-
             final RunnableGraph<CompletionStage<Done>> runnableGraph =
                     RunnableGraph.fromGraph(
                             GraphDSL.create(
                                     createProducerSink(producerSettings, producerClient),
                                     (builder, out) -> {
+                                        // create the fan-out flow
                                         final UniformFanOutShape<UserPurchaseProto, UserPurchaseProto> partitions =
                                                 builder.add(
                                                         Partition.create(
-                                                                UserPurchaseProto.class, numPartitions, userPurchase -> (Math.abs(userPurchase.getUserId().hashCode()) % numPartitions)));
+                                                                UserPurchaseProto.class, numPartitions, userPurchase -> (Math.abs(userPurchase.getUserId().hashCode()) % numPartitions)
+                                                        )
+                                                );
+                                        // create the partitions
                                         for (int i = 0; i < numPartitions; i++) {
-                                            builder.from(partitions.out(i))
-                                                    .via(builder.add(createPartitionedFlow(batchedTimeWindowSeconds, String.valueOf(i))));
+                                            builder.from(partitions.out(i));
                                         }
 
+                                        // wrap the source in the builder
                                         final Outlet<UserPurchaseProto> graphSource = builder.add(source).out();
 
+                                        // set up the fan-in
                                         final UniformFanInShape<ProducerMessage.Envelope<NotUsed>, ProducerMessage.Envelope<NotUsed>> merge
                                                 = builder.add(Merge.create(numPartitions));
 
+                                        // set up inital flow from source to sink for the 1st partition (0)
                                         builder
-                                            .from(graphSource)
-                                            .viaFanOut(partitions)
-                                            .viaFanIn(merge)
-                                            .to(out); // to() expects a SinkShape
+                                                .from(graphSource)
+                                                .viaFanOut(partitions)
+                                                .via(builder.add(createPartitionedFlow(batchedTimeWindowSeconds, String.valueOf(0))))
+                                                .viaFanIn(merge)
+                                                .to(out); // to() expects a SinkShape
+
+                                        // set up the flows for the remaining partitions
+                                        for (int i = 1; i < numPartitions; i++) {
+                                            builder.from(partitions).via(builder.add(createPartitionedFlow(batchedTimeWindowSeconds, String.valueOf(i)))).toFanIn(merge);
+                                        }
 
                                         return ClosedShape.getInstance();
                                     }

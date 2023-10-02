@@ -54,6 +54,9 @@ public class EventHubsProducerFlows {
         return new EventHubsProducerFlows(producerSettings, producerClient, batchedTimeWindowSeconds, numPartitions);
     }
 
+    /*
+    getUserEventSource returns a never ending source of random UserPurchaseProto events
+     */
     public Source<UserPurchaseProto, NotUsed> getUserEventSource() {
         int nrUsers = 4000;
         int maxPrice = 10000;
@@ -87,13 +90,19 @@ public class EventHubsProducerFlows {
                 });
     }
 
+    /*
+    createProducerSink commits producer envelopes that have been sent to the connector
+     */
     public Sink<ProducerMessage.Envelope<NotUsed>, CompletionStage<Done>> createProducerSink() {
         return Flow.<ProducerMessage.Envelope<NotUsed>>create()
                 .via(Producer.flow(producerSettings, producerClient))
                 .toMat(Sink.ignore(), Keep.right());
     }
 
-    Sink<UserPurchaseProto, CompletionStage<Done>> createPartitionedSink(String partition) {
+    /*
+    createPartitionedBatchSink collects event into a batch and emits to the connector when the size or time window has been reached.
+     */
+    Sink<UserPurchaseProto, CompletionStage<Done>> createPartitionedBatchSink(String partition) {
         return Flow.<UserPurchaseProto>create()
             .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length, Duration.ofSeconds(batchedTimeWindowSeconds))
             .mapConcat(eList -> eList.stream()
@@ -107,6 +116,9 @@ public class EventHubsProducerFlows {
             .toMat(Sink.ignore(),Keep.right());
     }
 
+    /*
+    getSinglePartitionFlow converts UserPurchaseProto data into EventData and places into a single Producer Envelope.
+     */
     public Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> getSinglePartitionFlow() {
         return Flow.<UserPurchaseProto>create()
                 .map(purchase -> {
@@ -115,14 +127,16 @@ public class EventHubsProducerFlows {
                 });
     }
 
+    /*
+    createSinglePartitionBatchedFlow collects events into a batch for a single partition and emits downstream when the size or time window has been reached.
+     */
     public Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> createSinglePartitionBatchedFlow() {
         return Flow.<UserPurchaseProto>create()
                 .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
-                .mapConcat(eList -> {
-                    return eList.stream()
-                            .collect(Collectors.groupingBy(e -> e.getUserId()))
-                            .entrySet();
-                })
+                .mapConcat(eList -> eList.stream()
+                        .collect(Collectors.groupingBy(e -> e.getUserId()))
+                        .entrySet()
+                )
                 .map(entrySet -> {
                     List<EventData> events = entrySet.getValue().stream().map(e -> new EventData(e.toByteArray())).toList();
                     return ProducerMessage.batch(events);
@@ -136,7 +150,10 @@ public class EventHubsProducerFlows {
                 });
     }
 
-    public Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> createPartitionedFlow(String partition) {
+    /*
+    createPartitionedBatchFlow collects events into a batch for a specific partition and emits downstream when the size or time window has been reached.
+     */
+    public Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> createPartitionedBatchFlow(String partition) {
         return Flow.<UserPurchaseProto>create()
                 .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
                 .mapConcat(eList -> eList.stream()
@@ -148,6 +165,9 @@ public class EventHubsProducerFlows {
                 });
     }
 
+    /*
+    getPartitionedBatchedGraph returns a graph that fans out and collects batches by partition, and then fans back into and single sink
+     */
     public Graph<ClosedShape, CompletionStage<Done>> getPartitionedBatchedGraph(Source<UserPurchaseProto, NotUsed> source) {
          return GraphDSL.create(
                 createProducerSink(),
@@ -175,13 +195,13 @@ public class EventHubsProducerFlows {
                     builder
                             .from(graphSource)
                             .viaFanOut(partitions)
-                            .via(builder.add(this.createPartitionedFlow(String.valueOf(0))))
+                            .via(builder.add(this.createPartitionedBatchFlow(String.valueOf(0))))
                             .viaFanIn(merge)
                             .to(out); // to() expects a SinkShape
 
                     // set up the flows for the remaining partitions
                     for (int i = 1; i < numPartitions; i++) {
-                        builder.from(partitions).via(builder.add(this.createPartitionedFlow(String.valueOf(i)))).toFanIn(merge);
+                        builder.from(partitions).via(builder.add(this.createPartitionedBatchFlow(String.valueOf(i)))).toFanIn(merge);
                     }
 
                     return ClosedShape.getInstance();
@@ -189,7 +209,9 @@ public class EventHubsProducerFlows {
         );
     }
 
-
+    /*
+    getPartitionedBatchedSinkedGraph returns a graph that fans out and collects batches by partition, and finally emits to sink per partition
+     */
     public Graph<ClosedShape, NotUsed> getPartitionedBatchedSinkedGraph(Source<UserPurchaseProto, NotUsed> source) {
         return GraphDSL.create(
                 builder -> {
@@ -199,7 +221,7 @@ public class EventHubsProducerFlows {
                                             UserPurchaseProto.class, numPartitions, userPurchase -> (Math.abs(userPurchase.getUserId().hashCode()) % numPartitions)));
                     builder.from(builder.add(source)).viaFanOut(partition);
                     for (int i = 0; i < numPartitions; i++) {
-                        builder.from(partition.out(i)).to(builder.add(createPartitionedSink(String.valueOf(i))));
+                        builder.from(partition.out(i)).to(builder.add(createPartitionedBatchSink(String.valueOf(i))));
                     }
                     return ClosedShape.getInstance();
                 });

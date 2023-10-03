@@ -221,7 +221,7 @@ public class EventHubsProducerFlows {
                                             UserPurchaseProto.class, numPartitions, userPurchase -> (Math.abs(userPurchase.getUserId().hashCode()) % numPartitions)));
                     builder.from(builder.add(source)).viaFanOut(partition);
                     for (int i = 0; i < numPartitions; i++) {
-                        builder.from(partition.out(i)).to(builder.add(createPartitionedBatchSink(String.valueOf(i))));
+                        builder.from(partition.out(i)).to(builder.add(createPartitionedBatchSink(String.valueOf(i)).async()));
                     }
                     return ClosedShape.getInstance();
                 });

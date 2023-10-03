@@ -13,13 +13,13 @@ Samples Sources, Flows, and Sinks are provided in two classes:
 1. [EventHubProducerFlows](./src/main/java/com/lightbend/streams/EventHubsProducerFlows.java)
 2. [EventHubConsumerFlows](./src/main/java/com/lightbend/streams/EventHubsConsumerFlows.java)
 
-Simple sample applications have been provided in the app package which ultimately leveage each of the sample Akka Streams.  
+Simple sample applications have been provided in the app package which ultimately leverage each of the sample Akka Streams.  
 
 ## Set up / Configuration
 
 Before running any of the sample applications you'll need to provide environment variables to enable proper connectivity to Azure Event Hubs. All environment variables are picked up through the `application.conf` file.
 
->**Note**: our application samples are producing to, and consuming from the same Event Hub (or topic). In the case that your application needs consume from one Event Hub and produce to another, you'll need to take care to create separate versions of the `eventhubs` configuration for producers and consumers and load appropriately.
+>**Note**: our application samples are producing to, and consuming from the same Event Hub (topic). In the use case that your application needs to consume from one Event Hub and produce to another then you'll need to take care to create separate versions of the `eventhubs` configuration for producers and consumers and load appropriately.
 
 ### Event Hubs Connectivity
 

@@ -104,7 +104,7 @@ public class EventHubsProducerFlows {
      */
     Sink<UserPurchaseProto, CompletionStage<Done>> createPartitionedBatchSink(String partition) {
         return Flow.<UserPurchaseProto>create()
-            .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length, Duration.ofSeconds(batchedTimeWindowSeconds))
+            .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
             .mapConcat(eList -> eList.stream()
                     .collect(Collectors.groupingBy(UserPurchaseProto::getUserId))
                     .entrySet())

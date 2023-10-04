@@ -23,7 +23,7 @@ Before running any of the sample applications you'll need to provide environment
 
 ### Event Hubs Connectivity via optional Connection-String
 
-> **Note**: the application samples are currently leveraging the `ClientFromConfig`, which is a is a **connection-string** only approach for connecting to Event Hubs. As we refine things and provide proper documentation we'll document ways to make connections more secure through things like URLs and Service Accounts.
+> **Note**: the application samples are currently leveraging the `ClientFromConfig`, which is a **connection-string** only approach for connecting to Event Hubs. As we refine things and provide proper documentation we'll document ways to make connections more secure through things like URLs and Service Accounts.
 
 EVENT_HUBS_CONNECTION_STRING - The connection string for the Event Hub.
 For more information on creating connection strings please [this](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send?tabs=connection-string%2Croles-azure-portal#get-the-connection-string).

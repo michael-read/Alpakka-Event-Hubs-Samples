@@ -19,9 +19,11 @@ Simple sample applications have been provided in the app package which ultimatel
 
 Before running any of the sample applications you'll need to provide environment variables to enable proper connectivity to Azure Event Hubs. All environment variables are picked up through the `application.conf` file.
 
->**Note**: our application samples are producing to, and consuming from the same Event Hub (topic). In the use case that your application needs to consume from one Event Hub and produce to another then you'll need to take care to create separate versions of the `eventhubs` configuration for producers and consumers and load appropriately.
+>**Note**: these application samples are producing to, and consuming from the same Event Hub (topic). In the event that your use case requires an application to consume from one Event Hub and produce to another then you'll need to take care to create separate versions of the `eventhubs` configuration for producers and consumers and load appropriately.
 
-### Event Hubs Connectivity
+### Event Hubs Connectivity via optional Connection-String
+
+> **Note**: the application samples are currently leveraging the `ClientFromConfig`, which is a is a **connection-string** only approach for connecting to Event Hubs. As we refine things and provide proper documentation we'll document ways to make connections more secure through things like URLs and Service Accounts.
 
 EVENT_HUBS_CONNECTION_STRING - The connection string for the Event Hub.
 For more information on creating connection strings please [this](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-java-get-started-send?tabs=connection-string%2Croles-azure-portal#get-the-connection-string).

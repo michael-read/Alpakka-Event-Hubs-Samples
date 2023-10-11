@@ -93,6 +93,8 @@ def appDependencies : Seq[ModuleID] = {
     "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
 //    "com.azure" % "azure-messaging-eventhubs" % "5.15.5",
     "com.azure" % "azure-messaging-eventhubs-checkpointstore-blob" % "1.16.6",
+    "com.azure" % "azure-identity" % "1.10.1",
+    "com.azure" % "azure-core-http-okhttp" % "1.11.7"
   )
 }
 

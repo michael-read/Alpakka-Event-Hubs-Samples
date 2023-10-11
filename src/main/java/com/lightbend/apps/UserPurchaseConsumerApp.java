@@ -13,6 +13,8 @@ import akka.stream.alpakka.azure.eventhubs.javadsl.Consumer;
 import akka.stream.alpakka.azure.eventhubs.javadsl.ConsumerSettings;
 import akka.stream.javadsl.Keep;
 import com.azure.messaging.eventhubs.EventProcessorClientBuilder;
+import com.lightbend.authentication.AzureClientCredentialBuilderHelper;
+import com.lightbend.authentication.AzureEventHubClientBuilderHelper;
 import com.lightbend.streams.EventHubsConsumerFlows;
 import com.typesafe.config.Config;
 import org.slf4j.Logger;
@@ -36,6 +38,7 @@ public class UserPurchaseConsumerApp {
             Config config = context.getSystem().settings().config().getConfig("event-hub-test");
             ConsumerSettings consumerSettings = ConsumerSettings.create(config);
             EventProcessorClientBuilder sdkClientBuilder = ClientFromConfig.processorClientBuilder(config.getConfig("eventhub"));
+//            EventProcessorClientBuilder sdkClientBuilder = AzureEventHubClientBuilderHelper.getEventProcessorClientViaProxy(config);
             CheckpointSettings checkpointSettings = CheckpointSettings.create(config);
             String storageConnectionString = context.getSystem().settings().config().getString("blob-storage.connection-string");
             String storageContainerName = context.getSystem().settings().config().getString("blob-storage.container-name");

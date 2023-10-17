@@ -58,7 +58,8 @@ def commercialDependencies : Seq[ModuleID] = {
     Cinnamon.library.cinnamonPrometheus,
     Cinnamon.library.cinnamonPrometheusHttpServer,
     Cinnamon.library.jmxImporter,
-    "com.typesafe.akka" %% "akka-stream" % AkkaVersion, "com.lightbend.akka" %% "akka-stream-azure-eventhubs" % AlpakkaEventHubsVersion,
+    "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
+    "com.lightbend.akka" %% "akka-stream-azure-eventhubs" % AlpakkaEventHubsVersion,
     // END: this requires a commercial Lightbend Subscription
   )
 }

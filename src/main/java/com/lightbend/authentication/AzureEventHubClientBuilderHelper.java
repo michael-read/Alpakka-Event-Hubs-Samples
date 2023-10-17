@@ -17,7 +17,7 @@ public class AzureEventHubClientBuilderHelper {
     public static EventProcessorClientBuilder getEventProcessorClientUsingClientSecret(Config config) {
         final ClientSecretCredential credentials = AzureClientCredentialBuilderHelper.getClientCredential(config);
         return new EventProcessorClientBuilder()
-                .fullyQualifiedNamespace(config.getString("connectionString"))
+                .fullyQualifiedNamespace(config.getString("namespace"))
                 .eventHubName(config.getString("eventHubName"))
                 .consumerGroup(config.getString("consumer-group"))
                 .credential(credentials);
@@ -27,10 +27,11 @@ public class AzureEventHubClientBuilderHelper {
     public static EventProcessorClientBuilder getEventProcessorClientViaProxy(Config config) {
         final ClientSecretCredential credentials = AzureClientCredentialBuilderHelper.getClientCredentialUsingProxy(config);
         return new EventProcessorClientBuilder()
-                .fullyQualifiedNamespace(config.getString("connectionString"))
+                .fullyQualifiedNamespace(config.getString("namespace"))
                 .eventHubName(config.getString("eventHubName"))
                 .consumerGroup(config.getString("consumer-group"))
                 .credential(credentials);
     }
+
 
 }

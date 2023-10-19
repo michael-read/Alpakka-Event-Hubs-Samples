@@ -63,8 +63,9 @@ public class EventHubsProducerFlows {
         int maxQuantity = 5;
 
         List<String> products = new ArrayList<>();
-        products.add("cat t-shirt");
+        products.add("kalix t-shirt");
         products.add("akka t-shirt");
+        products.add("scala t-shirt");
         products.add("skis");
         products.add("climbing shoes");
         products.add("rope");
@@ -134,7 +135,7 @@ public class EventHubsProducerFlows {
         return Flow.<UserPurchaseProto>create()
                 .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
                 .mapConcat(eList -> eList.stream()
-                        .collect(Collectors.groupingBy(e -> e.getUserId()))
+                        .collect(Collectors.groupingBy(UserPurchaseProto::getUserId))
                         .entrySet()
                 )
                 .map(entrySet -> {

@@ -8,6 +8,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.stream.alpakka.azure.eventhubs.ClientFromConfig;
 import akka.stream.alpakka.azure.eventhubs.javadsl.ProducerSettings;
 import com.azure.messaging.eventhubs.EventHubProducerAsyncClient;
+import com.lightbend.authentication.AzureEHProducerBuilderHelper;
 import com.lightbend.streams.EventHubsProducerFlows;
 import com.typesafe.config.Config;
 import org.slf4j.Logger;
@@ -36,7 +37,8 @@ public class UserPurchaseBatchProducerApp {
             Config eventHubConfig = context.getSystem().settings().config().getConfig("event-hub-sample");
 
             ProducerSettings producerSettings = ProducerSettings.create(eventHubConfig);
-            EventHubProducerAsyncClient producerClient = ClientFromConfig.producer(eventHubConfig.getConfig("eventhub"));
+//            EventHubProducerAsyncClient producerClient = ClientFromConfig.producer(eventHubConfig.getConfig("eventhub"));
+            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(eventHubConfig.getConfig("eventhub"));
 
             EventHubsProducerFlows eventHubsProducerFlows = EventHubsProducerFlows.create(producerSettings, producerClient, batchedTimeWindowSeconds, numPartitions);
 

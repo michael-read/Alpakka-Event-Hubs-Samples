@@ -23,6 +23,11 @@
 
     <repositories>
         <repository>
+            <id>akka-repository</id>
+            <name>Akka library repository</name>
+            <url>https://repo.akka.io/maven</url>
+        </repository>
+        <repository>
             <id>lightbend-commercial</id>
             <name>Lightbend Commercial</name>
             <!--
@@ -31,8 +36,7 @@
                 export LIGHTBEND_COMMERCIAL_URL="https://repo.lightbend.com/pass/<your-password-token>/commercial-releases"
             -->
             <!--suppress UnresolvedMavenProperty -->
-<!--            <url>${env.LIGHTBEND_COMMERCIAL_URL}</url>-->
-            <url>https://repo.lightbend.com/pass/ZA3Cu6JJSljhg5Bz8wZkTT3s97GvSw7yvhcI_pBpGO9B4Sdl/commercial-releases</url>
+            <url>${env.LIGHTBEND_COMMERCIAL_URL}</url>
         </repository>
     </repositories>
 

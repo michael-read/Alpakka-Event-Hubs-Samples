@@ -18,7 +18,7 @@
         <project.encoding>UTF-8</project.encoding>
         <scala.binary.version>2.13</scala.binary.version>
         <logback.version>1.2.11</logback.version>
-        <alpakka.eventhubs.version>2.0.0-M4</alpakka.eventhubs.version>
+        <alpakka.eventhubs.version>2.0.0-M5</alpakka.eventhubs.version>
     </properties>
 
     <repositories>

@@ -33,7 +33,7 @@ public class EventHubsConsumerFlows {
     private final String sasToken;
     private final BlobCheckpointStore checkpointStore;
 
-    public EventHubsConsumerFlows(
+    private EventHubsConsumerFlows(
             ConsumerSettings consumerSettings,
             CheckpointSettings checkpointSettings,
             EventProcessorClientBuilder sdkClientBuilder,

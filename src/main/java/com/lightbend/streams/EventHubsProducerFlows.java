@@ -33,7 +33,7 @@ public class EventHubsProducerFlows {
     private final int batchedTimeWindowSeconds;
     private final int numPartitions;
 
-    public EventHubsProducerFlows(
+    private EventHubsProducerFlows(
             ProducerSettings producerSettings,
             EventHubProducerAsyncClient producerClient,
             int batchedTimeWindowSeconds,
@@ -73,7 +73,8 @@ public class EventHubsProducerFlows {
         Random random = new Random();
         AtomicLong counter = new AtomicLong(0L);
 
-        return Source.repeat(NotUsed.getInstance())
+//        return Source.repeat(NotUsed.getInstance())   // creates a never ending stream
+        return Source.range(1, 100)
                 .map((notUsed) -> {
                     String randomEntityId = Integer.valueOf(random.nextInt(nrUsers)).toString();
                     long price = random.nextInt(maxPrice);

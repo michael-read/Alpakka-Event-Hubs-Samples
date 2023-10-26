@@ -5,12 +5,11 @@ import akka.NotUsed;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.stream.alpakka.azure.eventhubs.ClientFromConfig;
 import akka.stream.alpakka.azure.eventhubs.javadsl.ProducerSettings;
 import com.azure.messaging.eventhubs.EventHubProducerAsyncClient;
 import com.lightbend.authentication.AzureEHProducerBuilderHelper;
 import com.lightbend.streams.EventHubsProducerFlows;
-import com.typesafe.config.Config;
+import com.lightbend.streams.LogThrottleFlows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +41,7 @@ public class UserPurchaseBatchProducerApp {
             // Primary Stream
             CompletionStage<Done> done =
                     eventHubsProducerFlows.getUserEventSource()
+                            .via(LogThrottleFlows.create().getThrottledAndLogEachUserPurchaseProto())
                             .via(eventHubsProducerFlows.createSinglePartitionBatchedFlow())
                             .runWith(eventHubsProducerFlows.createProducerSink().async(), context.getSystem());
 

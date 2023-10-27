@@ -1,10 +1,7 @@
 package com.lightbend.authentication;
 
 import com.azure.core.credential.TokenCredential;
-import com.azure.identity.DefaultAzureCredential;
-import com.azure.identity.DefaultAzureCredentialBuilder;
-import com.azure.identity.InteractiveBrowserCredential;
-import com.azure.identity.InteractiveBrowserCredentialBuilder;
+import com.azure.identity.*;
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubProducerAsyncClient;
 import com.typesafe.config.Config;
@@ -27,9 +24,17 @@ public class AzureEHProducerBuilderHelper {
         return producer;
     }
 
-    // by user
-    // by group
-    // by App
     // by service principal
+    public static EventHubProducerAsyncClient getEHProducerServicePrincipalAsyncClient(Config config) {
+        final ClientSecretCredential credentials = AzureClientCredentialBuilderHelper.getClientCredential(config);
+        EventHubProducerAsyncClient producer = new EventHubClientBuilder()
+                .credential(
+                        config.getString("namespace"),
+                        config.getString("eventHubName"),
+                        credentials)
+                .buildAsyncProducerClient();
+        return producer;
+    }
+
     // by managed identity
 }

@@ -34,7 +34,8 @@ public class UserPurchaseBatchProducerApp {
 
             // Evemt Hubs Configuration
             ProducerSettings producerSettings = ProducerSettings.create(context.getSystem());
-            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(context.getSystem().settings().config().getConfig("producer-eventhubs"));
+//            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(context.getSystem().settings().config().getConfig("producer-eventhubs"));
+            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerServicePrincipalAsyncClient(context.getSystem().settings().config().getConfig("producer-eventhubs"));
 
             EventHubsProducerFlows eventHubsProducerFlows = EventHubsProducerFlows.create(producerSettings, producerClient, batchedTimeWindowSeconds, numPartitions);
 

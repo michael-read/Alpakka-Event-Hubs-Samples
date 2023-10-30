@@ -17,7 +17,7 @@ public class AzureEHProducerBuilderHelper {
         EventHubProducerAsyncClient producer = new EventHubClientBuilder()
                 .credential(
                         config.getString("namespace"),
-                        config.getString("eventHubName"),
+                        config.getString("hub-name"),
                         credential
                 )
                 .buildAsyncProducerClient();
@@ -30,7 +30,7 @@ public class AzureEHProducerBuilderHelper {
         EventHubProducerAsyncClient producer = new EventHubClientBuilder()
                 .credential(
                         config.getString("namespace"),
-                        config.getString("eventHubName"),
+                        config.getString("hub-name"),
                         credentials)
                 .buildAsyncProducerClient();
         return producer;

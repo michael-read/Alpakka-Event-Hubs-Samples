@@ -35,7 +35,9 @@ public class UserPurchaseConsumerApp {
     private Behavior<NotUsed> init() {
         return Behaviors.setup(context -> {
 
-            // Get Configurations
+/*            // Get Configurations
+            Config consumerConfig = context.getSystem().settings().config().getConfig("eventhubs-client")
+                    .withFallback(context.getSystem().settings().config().getConfig("alpakka.azure.eventhubs"));*/
             Config consumerConfig = context.getSystem().settings().config().getConfig("eventhubs-client");
 
 //            ConsumerSettings consumerSettings = ConsumerSettings.create(consumerConfig.getConfig("consumer"));

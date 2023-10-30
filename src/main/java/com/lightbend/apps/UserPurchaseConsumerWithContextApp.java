@@ -6,13 +6,15 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
-import akka.stream.alpakka.azure.eventhubs.ClientFromConfig;
 import akka.stream.alpakka.azure.eventhubs.javadsl.CheckpointSettings;
 import akka.stream.alpakka.azure.eventhubs.javadsl.Checkpointer;
 import akka.stream.alpakka.azure.eventhubs.javadsl.Consumer;
 import akka.stream.alpakka.azure.eventhubs.javadsl.ConsumerSettings;
 import akka.stream.javadsl.Keep;
 import com.azure.messaging.eventhubs.EventProcessorClientBuilder;
+import com.azure.storage.blob.BlobContainerAsyncClient;
+import com.lightbend.authentication.AzureEHBlobStoreClientBuilderHelper;
+import com.lightbend.authentication.AzureEHConsumerBuilderHelper;
 import com.lightbend.streams.EventHubsConsumerFlows;
 import com.typesafe.config.Config;
 import org.slf4j.Logger;
@@ -32,22 +34,20 @@ public class UserPurchaseConsumerWithContextApp {
     private Behavior<NotUsed> init() {
         return Behaviors.setup(context -> {
 
-            // Event Hubs Configuration
-            Config config = context.getSystem().settings().config().getConfig("event-hub-test");
-            ConsumerSettings consumerSettings = ConsumerSettings.create(config);
-            EventProcessorClientBuilder sdkClientBuilder = ClientFromConfig.processorClientBuilder(config.getConfig("eventhub"));
-            CheckpointSettings checkpointSettings = CheckpointSettings.create(config);
-            String storageConnectionString = context.getSystem().settings().config().getString("blob-storage.connection-string");
-            String storageContainerName = context.getSystem().settings().config().getString("blob-storage.container-name");
-            String sasToken = context.getSystem().settings().config().getString("blob-storage.sas-token");
+            // Get Configurations
+            Config consumerConfig = context.getSystem().settings().config().getConfig("consumer-eventhubs");
+            Config blobStorageSettings = context.getSystem().settings().config().getConfig("blob-storage");
+
+            ConsumerSettings consumerSettings = ConsumerSettings.create(consumerConfig);
+            EventProcessorClientBuilder sdkClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorClientServicePrincipal(consumerConfig);
+            CheckpointSettings checkpointSettings = CheckpointSettings.create(consumerConfig);
+            BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getServicePrincipalAsyncClient(blobStorageSettings);
 
             EventHubsConsumerFlows eventHubsConsumerFlows = EventHubsConsumerFlows.create(
                     consumerSettings,
                     checkpointSettings,
-                    sdkClientBuilder,
-                    storageConnectionString,
-                    storageContainerName,
-                    sasToken
+                    blobContainerAsyncClient,
+                    sdkClientBuilder
             );
 
             Pair<Consumer.Control, CompletionStage<Done>> result =

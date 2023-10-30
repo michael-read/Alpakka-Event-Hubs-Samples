@@ -20,7 +20,7 @@ public class AzureEHConsumerBuilderHelper {
     }
 
     // for local Event Hubs connection
-    public static EventProcessorClientBuilder getEventProcessorClientUsingClientSecret(Config config) {
+    public static EventProcessorClientBuilder getEventProcessorClientServicePrincipal(Config config) {
         final ClientSecretCredential credentials = AzureClientCredentialBuilderHelper.getClientCredential(config);
         return new EventProcessorClientBuilder()
                 .fullyQualifiedNamespace(
@@ -43,6 +43,7 @@ public class AzureEHConsumerBuilderHelper {
                                 config.getString("consumer-group"))
                 )
                 .credential(credentials);
+
     }
 
     public static EventProcessorClientBuilder getClientManagedIdentity(Config config) {
@@ -56,7 +57,8 @@ public class AzureEHConsumerBuilderHelper {
                 .credential(new ChainedTokenCredentialBuilder()
                         .addFirst(new ManagedIdentityCredentialBuilder().build())
                         .addLast(new AzureCliCredentialBuilder().build())
-                        .build());
+                        .build()
+                );
     }
 
 }

@@ -13,7 +13,6 @@ import com.azure.messaging.eventhubs.EventData;
 import com.azure.messaging.eventhubs.EventProcessorClientBuilder;
 import com.azure.messaging.eventhubs.checkpointstore.blob.BlobCheckpointStore;
 import com.azure.storage.blob.BlobContainerAsyncClient;
-import com.azure.storage.blob.BlobContainerClientBuilder;
 import com.lightbend.models.CustomElementWrapper;
 import com.lightbend.serialization.UserPurchaseProto;
 import org.slf4j.Logger;
@@ -27,53 +26,38 @@ public class EventHubsConsumerFlows {
 
     private final ConsumerSettings consumerSettings;
     private final CheckpointSettings checkpointSettings;
+    private BlobContainerAsyncClient blobContainerAsyncClient;
     private final EventProcessorClientBuilder sdkClientBuilder;
-    private final String storageConnectionString;
-    private final String storageContainerName;
-    private final String sasToken;
+
     private final BlobCheckpointStore checkpointStore;
 
-    public EventHubsConsumerFlows(
+    private EventHubsConsumerFlows(
             ConsumerSettings consumerSettings,
             CheckpointSettings checkpointSettings,
-            EventProcessorClientBuilder sdkClientBuilder,
-            String storageConnectionString,
-            String storageContainerName,
-            String sasToken
+            BlobContainerAsyncClient blobContainerAsyncClient,
+            EventProcessorClientBuilder sdkClientBuilder
     ) {
 
         this.consumerSettings = consumerSettings;
         this.checkpointSettings = checkpointSettings;
+        this.blobContainerAsyncClient = blobContainerAsyncClient;
         this.sdkClientBuilder = sdkClientBuilder;
-        this.storageConnectionString = storageConnectionString;
-        this.storageContainerName = storageContainerName;
-        this.sasToken = sasToken;
 
         // Create Event Hubs Checkpoint Store
-        BlobContainerAsyncClient blobContainerClient =
-                new BlobContainerClientBuilder()
-                        .connectionString(this.storageConnectionString)
-                        .containerName(this.storageContainerName)
-                        .sasToken(this.sasToken)
-                        .buildAsyncClient();
-        this.checkpointStore = new BlobCheckpointStore(blobContainerClient);
+        this.checkpointStore = new BlobCheckpointStore(blobContainerAsyncClient);
     }
 
     static public EventHubsConsumerFlows create(
             ConsumerSettings consumerSettings,
             CheckpointSettings checkpointSettings,
-            EventProcessorClientBuilder sdkClientBuilder,
-            String storageConnectionString,
-            String storageContainerName,
-            String sasToken
+            BlobContainerAsyncClient blobContainerAsyncClient,
+            EventProcessorClientBuilder sdkClientBuilder
     ) {
         return new EventHubsConsumerFlows(
                 consumerSettings,
                 checkpointSettings,
-                sdkClientBuilder,
-                storageConnectionString,
-                storageContainerName,
-                sasToken
+                blobContainerAsyncClient,
+                sdkClientBuilder
         );
     }
 

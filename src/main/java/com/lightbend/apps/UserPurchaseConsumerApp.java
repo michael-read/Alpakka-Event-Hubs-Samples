@@ -40,8 +40,8 @@ public class UserPurchaseConsumerApp {
                     .withFallback(context.getSystem().settings().config().getConfig("alpakka.azure.eventhubs"));*/
             Config consumerConfig = context.getSystem().settings().config().getConfig("eventhubs-client");
 
-//            ConsumerSettings consumerSettings = ConsumerSettings.create(consumerConfig.getConfig("consumer"));
-            ConsumerSettings consumerSettings = ConsumerSettings.create(context.getSystem());
+            ConsumerSettings consumerSettings = ConsumerSettings.create(consumerConfig.getConfig("consumer"));
+//            ConsumerSettings consumerSettings = ConsumerSettings.create(context.getSystem());
             EventProcessorClientBuilder sdkClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorClientServicePrincipal(consumerConfig);
             CheckpointSettings checkpointSettings = CheckpointSettings.create(context.getSystem());
             BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getServicePrincipalAsyncClient(consumerConfig);

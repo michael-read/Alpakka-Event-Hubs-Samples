@@ -125,7 +125,8 @@ public class EventHubsProducerFlows {
         return Flow.<UserPurchaseProto>create()
                 .map(purchase -> {
                     EventData eventData = new EventData(purchase.toByteArray());
-                    return ProducerMessage.singleWithPartitioning(eventData, ProducerMessage.partitionByKey(purchase.getUserId()));
+//                    return ProducerMessage.singleWithPartitioning(eventData, ProducerMessage.partitionByKey(purchase.getUserId()));
+                    return ProducerMessage.single(eventData);
                 });
     }
 

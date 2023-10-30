@@ -29,7 +29,7 @@ public class UserPurchaseSingleProducerApp {
             Config config = context.getSystem().settings().config();
             int batchedTimeWindowSeconds = config.getInt("app.batched-producer-time-window-seconds");
             int numPartitions = config.getInt("app.number-of-partitions");
-            Config producerConfig = config.getConfig("producer-eventhubs");
+            Config producerConfig = config.getConfig("eventhubs-client.producer");
 
             // Evemt Hubs Configuration
             ProducerSettings producerSettings = ProducerSettings.create(context.getSystem());

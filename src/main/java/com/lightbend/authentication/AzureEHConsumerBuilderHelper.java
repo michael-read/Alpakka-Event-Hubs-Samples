@@ -26,7 +26,7 @@ public class AzureEHConsumerBuilderHelper {
                 .fullyQualifiedNamespace(
                         getFullyQualifiedNamespace(
                             config.getString("namespace"),
-                            config.getString("eventHubName"),
+                            config.getString("hub-name"),
                             config.getString("consumer-group"))
                 )
                 .credential(credentials);
@@ -39,7 +39,7 @@ public class AzureEHConsumerBuilderHelper {
                 .fullyQualifiedNamespace(
                         getFullyQualifiedNamespace(
                                 config.getString("namespace"),
-                                config.getString("eventHubName"),
+                                config.getString("hub-name"),
                                 config.getString("consumer-group"))
                 )
                 .credential(credentials);

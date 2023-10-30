@@ -10,6 +10,7 @@ import com.azure.messaging.eventhubs.EventHubProducerAsyncClient;
 import com.lightbend.authentication.AzureEHProducerBuilderHelper;
 import com.lightbend.streams.EventHubsProducerFlows;
 import com.lightbend.streams.LogThrottleFlows;
+import com.typesafe.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +30,15 @@ public class UserPurchaseBatchProducerApp {
     private Behavior<NotUsed> init() {
         return Behaviors.setup(context -> {
 
-            int batchedTimeWindowSeconds = context.getSystem().settings().config().getInt("app.batched-producer-time-window-seconds");
-            int numPartitions = context.getSystem().settings().config().getInt("app.number-of-partitions");
+            Config config = context.getSystem().settings().config();
+            int batchedTimeWindowSeconds = config.getInt("app.batched-producer-time-window-seconds");
+            int numPartitions = config.getInt("app.number-of-partitions");
+            Config producerConfig = config.getConfig("producer-eventhubs");
 
             // Evemt Hubs Configuration
             ProducerSettings producerSettings = ProducerSettings.create(context.getSystem());
-//            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(context.getSystem().settings().config().getConfig("producer-eventhubs"));
-            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerServicePrincipalAsyncClient(context.getSystem().settings().config().getConfig("producer-eventhubs"));
-
+            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(producerConfig);
+//            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerServicePrincipalAsyncClient(producerConfig);
             EventHubsProducerFlows eventHubsProducerFlows = EventHubsProducerFlows.create(producerSettings, producerClient, batchedTimeWindowSeconds, numPartitions);
 
             // Primary Stream

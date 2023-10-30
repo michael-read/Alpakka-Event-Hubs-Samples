@@ -36,12 +36,11 @@ public class UserPurchaseConsumerWithContextApp {
 
             // Get Configurations
             Config consumerConfig = context.getSystem().settings().config().getConfig("consumer-eventhubs");
-            Config blobStorageSettings = context.getSystem().settings().config().getConfig("blob-storage");
 
-            ConsumerSettings consumerSettings = ConsumerSettings.create(context.getSystem());
+            ConsumerSettings consumerSettings = ConsumerSettings.create(consumerConfig);
             EventProcessorClientBuilder sdkClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorClientServicePrincipal(consumerConfig);
-            CheckpointSettings checkpointSettings = CheckpointSettings.create(consumerConfig);
-            BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getServicePrincipalAsyncClient(blobStorageSettings);
+            CheckpointSettings checkpointSettings = CheckpointSettings.create(context.getSystem());
+            BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getServicePrincipalAsyncClient(consumerConfig);
 
             EventHubsConsumerFlows eventHubsConsumerFlows = EventHubsConsumerFlows.create(
                     consumerSettings,

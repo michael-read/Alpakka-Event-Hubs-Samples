@@ -31,6 +31,7 @@ public class AzureEHConsumerBuilderHelper {
                             config.getString("consumer-group"))*/
 
                 )
+                .eventHubName(config.getString("consumer.hub-name"))
                 .credential(credentials);
     }
 
@@ -45,6 +46,7 @@ public class AzureEHConsumerBuilderHelper {
                                 config.getString("hub-name"),
                                 config.getString("consumer-group"))*/
                 )
+                .eventHubName(config.getString("consumer.hub-name"))
                 .credential(credentials);
 
     }
@@ -58,6 +60,7 @@ public class AzureEHConsumerBuilderHelper {
                                 config.getString("hub-name"),
                                 config.getString("consumer-group"))*/
                 )
+                .eventHubName(config.getString("consumer.hub-name"))
                 .credential(new ChainedTokenCredentialBuilder()
                         .addFirst(new ManagedIdentityCredentialBuilder().build())
                         .addLast(new AzureCliCredentialBuilder().build())

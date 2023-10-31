@@ -11,7 +11,6 @@ import akka.stream.alpakka.azure.eventhubs.javadsl.Checkpointer;
 import akka.stream.alpakka.azure.eventhubs.javadsl.Consumer;
 import akka.stream.alpakka.azure.eventhubs.javadsl.ConsumerSettings;
 import akka.stream.javadsl.Keep;
-import com.azure.messaging.eventhubs.EventProcessorClient;
 import com.azure.messaging.eventhubs.EventProcessorClientBuilder;
 import com.azure.storage.blob.BlobContainerAsyncClient;
 import com.lightbend.authentication.AzureEHBlobStoreClientBuilderHelper;
@@ -35,13 +34,12 @@ public class UserPurchaseConsumerApp {
     private Behavior<NotUsed> init() {
         return Behaviors.setup(context -> {
 
-/*            // Get Configurations
+            // Get Configurations - merge with reference.conf default settings
             Config consumerConfig = context.getSystem().settings().config().getConfig("eventhubs-client")
-                    .withFallback(context.getSystem().settings().config().getConfig("alpakka.azure.eventhubs"));*/
-            Config consumerConfig = context.getSystem().settings().config().getConfig("eventhubs-client");
+                    .withFallback(context.getSystem().settings().config().getConfig("alpakka.azure.eventhubs"));
 
             ConsumerSettings consumerSettings = ConsumerSettings.create(consumerConfig.getConfig("consumer"));
-//            ConsumerSettings consumerSettings = ConsumerSettings.create(context.getSystem());
+
             EventProcessorClientBuilder sdkClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorClientServicePrincipal(consumerConfig);
             CheckpointSettings checkpointSettings = CheckpointSettings.create(context.getSystem());
             BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getServicePrincipalAsyncClient(consumerConfig);

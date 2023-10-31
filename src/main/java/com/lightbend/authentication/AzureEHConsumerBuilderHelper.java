@@ -9,29 +9,11 @@ import com.typesafe.config.Config;
 
 public class AzureEHConsumerBuilderHelper {
 
-/*    private static String getFullyQualifiedNamespace(String namespace, String eventHubName, String consumerGroup) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(namespace);
-        sb.append("/");
-        sb.append(eventHubName);
-        sb.append("/");
-        sb.append(consumerGroup);
-        return sb.toString();
-    }*/
-
-    // for local Event Hubs connection
     public static EventProcessorClientBuilder getEventProcessorClientServicePrincipal(Config config) {
         final ClientSecretCredential credentials = AzureClientCredentialBuilderHelper.getClientCredential(config.getConfig("consumer"));
         return new EventProcessorClientBuilder()
-                .fullyQualifiedNamespace(
-                        config.getString("consumer.namespace")
-/*                        getFullyQualifiedNamespace(
-                            config.getString("namespace"),
-                            config.getString("hub-name"),
-                            config.getString("consumer-group"))*/
-
-                )
-                .eventHubName(config.getString("consumer.hub-name"))
+                .fullyQualifiedNamespace(config.getString("consumer.namespace"))
+                .eventHubName(config.getString("eventhub.hub-name"))
                 .credential(credentials);
     }
 
@@ -39,28 +21,16 @@ public class AzureEHConsumerBuilderHelper {
     public static EventProcessorClientBuilder getEventProcessorClientViaProxy(Config config) {
         final ClientSecretCredential credentials = AzureClientCredentialBuilderHelper.getClientCredential(config.getConfig("consumer"));
         return new EventProcessorClientBuilder()
-                .fullyQualifiedNamespace(
-                        config.getString("consumer.namespace")
-/*                        getFullyQualifiedNamespace(
-                                config.getString("namespace"),
-                                config.getString("hub-name"),
-                                config.getString("consumer-group"))*/
-                )
-                .eventHubName(config.getString("consumer.hub-name"))
+                .fullyQualifiedNamespace(config.getString("consumer.namespace"))
+                .eventHubName(config.getString("eventhub.hub-name"))
                 .credential(credentials);
 
     }
 
     public static EventProcessorClientBuilder getClientManagedIdentity(Config config) {
         return new EventProcessorClientBuilder()
-                .fullyQualifiedNamespace(
-                        config.getString("consumer.namespace")
-/*                        getFullyQualifiedNamespace(
-                                config.getString("namespace"),
-                                config.getString("hub-name"),
-                                config.getString("consumer-group"))*/
-                )
-                .eventHubName(config.getString("consumer.hub-name"))
+                .fullyQualifiedNamespace(config.getString("consumer.namespace"))
+                .eventHubName(config.getString("eventhub.hub-name"))
                 .credential(new ChainedTokenCredentialBuilder()
                         .addFirst(new ManagedIdentityCredentialBuilder().build())
                         .addLast(new AzureCliCredentialBuilder().build())

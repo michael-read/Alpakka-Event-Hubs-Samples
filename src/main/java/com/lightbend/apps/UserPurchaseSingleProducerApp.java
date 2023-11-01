@@ -5,6 +5,7 @@ import akka.NotUsed;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.stream.alpakka.azure.eventhubs.ClientFromConfig;
 import akka.stream.alpakka.azure.eventhubs.javadsl.ProducerSettings;
 import com.azure.messaging.eventhubs.EventHubProducerAsyncClient;
 import com.lightbend.authentication.AzureEHProducerBuilderHelper;
@@ -29,11 +30,17 @@ public class UserPurchaseSingleProducerApp {
             Config config = context.getSystem().settings().config();
             int batchedTimeWindowSeconds = config.getInt("app.batched-producer-time-window-seconds");
             int numPartitions = config.getInt("app.number-of-partitions");
-            Config producerConfig = config.getConfig("eventhubs-client.producer");
+
+            // Get Configurations - merge with reference.conf default settings
+            Config producerConfig = config.getConfig("eventhubs-client")
+                    .withFallback(config.getConfig("alpakka.azure.eventhubs"));
+
+//            Config producerConfig = config.getConfig("eventhubs-client.producer");
 
             // Evemt Hubs Configuration
-            ProducerSettings producerSettings = ProducerSettings.create(context.getSystem());
-            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(producerConfig);
+            ProducerSettings producerSettings = ProducerSettings.create(producerConfig);
+            EventHubProducerAsyncClient producerClient = ClientFromConfig.producer(producerConfig.getConfig("eventhub"));
+//            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(producerConfig);
 //            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerServicePrincipalAsyncClient(producerConfig);
             EventHubsProducerFlows eventHubsProducerFlows = EventHubsProducerFlows.create(producerSettings, producerClient, batchedTimeWindowSeconds, numPartitions);
 

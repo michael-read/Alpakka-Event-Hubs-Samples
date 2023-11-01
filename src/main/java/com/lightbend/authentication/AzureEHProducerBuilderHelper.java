@@ -11,27 +11,28 @@ public class AzureEHProducerBuilderHelper {
     public static EventHubProducerAsyncClient getEHProducerDefaultAsyncClient(Config config) {
         TokenCredential credential = new DefaultAzureCredentialBuilder()
                 .build();
-
         // "<<fully-qualified-namespace>>" will look similar to "{your-namespace}.servicebus.windows.net"
         // "<<event-hub-name>>" will be the name of the Event Hub instance you created inside the Event Hubs namespace.
-        EventHubProducerAsyncClient producer = new EventHubClientBuilder()
-                .credential(
-                        config.getString("namespace"),
-                        config.getString("hub-name"),
-                        credential
-                )
-                .buildAsyncProducerClient();
-        return producer;
+        var clientBuilder = new EventHubClientBuilder();
+        if (config.getString("eventhub.connection-string").isEmpty()) {
+            clientBuilder
+                .credential(credential)
+                .eventHubName(config.getString("eventhub.hub-name"))
+                .fullyQualifiedNamespace(config.getString("producer.namespace"));
+        }
+        else {
+            clientBuilder.connectionString(config.getString("eventhub.connection-string"));
+        }
+        return clientBuilder.buildAsyncProducerClient();
     }
 
     // by service principal
     public static EventHubProducerAsyncClient getEHProducerServicePrincipalAsyncClient(Config config) {
-        final ClientSecretCredential credentials = AzureClientCredentialBuilderHelper.getClientCredential(config);
+        final ClientSecretCredential credentials = AzureClientCredentialBuilderHelper.getClientCredential(config.getConfig("producer"));
         EventHubProducerAsyncClient producer = new EventHubClientBuilder()
-                .credential(
-                        config.getString("namespace"),
-                        config.getString("hub-name"),
-                        credentials)
+                .credential(credentials)
+                .eventHubName(config.getString("eventhub.hub-name"))
+                .fullyQualifiedNamespace(config.getString("producer.namespace"))
                 .buildAsyncProducerClient();
         return producer;
     }

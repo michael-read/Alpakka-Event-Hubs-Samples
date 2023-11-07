@@ -26,8 +26,7 @@ public class EventHubsConsumerFlows {
 
     private final ConsumerSettings consumerSettings;
     private final CheckpointSettings checkpointSettings;
-    private BlobContainerAsyncClient blobContainerAsyncClient;
-    private final EventProcessorClientBuilder sdkClientBuilder;
+    private final EventProcessorClientBuilder eventProcessorClientBuilder;
 
     private final BlobCheckpointStore checkpointStore;
 
@@ -35,13 +34,12 @@ public class EventHubsConsumerFlows {
             ConsumerSettings consumerSettings,
             CheckpointSettings checkpointSettings,
             BlobContainerAsyncClient blobContainerAsyncClient,
-            EventProcessorClientBuilder sdkClientBuilder
+            EventProcessorClientBuilder eventProcessorClientBuilder
     ) {
 
         this.consumerSettings = consumerSettings;
         this.checkpointSettings = checkpointSettings;
-        this.blobContainerAsyncClient = blobContainerAsyncClient;
-        this.sdkClientBuilder = sdkClientBuilder;
+        this.eventProcessorClientBuilder = eventProcessorClientBuilder;
 
         // Create Event Hubs Checkpoint Store
         this.checkpointStore = new BlobCheckpointStore(blobContainerAsyncClient);
@@ -51,13 +49,13 @@ public class EventHubsConsumerFlows {
             ConsumerSettings consumerSettings,
             CheckpointSettings checkpointSettings,
             BlobContainerAsyncClient blobContainerAsyncClient,
-            EventProcessorClientBuilder sdkClientBuilder
+            EventProcessorClientBuilder eventProcessorClientBuilder
     ) {
         return new EventHubsConsumerFlows(
                 consumerSettings,
                 checkpointSettings,
                 blobContainerAsyncClient,
-                sdkClientBuilder
+                eventProcessorClientBuilder
         );
     }
 
@@ -65,7 +63,7 @@ public class EventHubsConsumerFlows {
     getConsumerSource returns a source of elements that are placed into a CustomElementWrapper which contains the original UserPurchaseProto, and the checkpoint metadata
      */
     public Source<CustomElementWrapper, Consumer.Control> getConsumerSource() {
-        return Consumer.source(consumerSettings, sdkClientBuilder, checkpointSettings, checkpointStore, (eventData, checkpoint) -> {
+        return Consumer.source(consumerSettings, eventProcessorClientBuilder, checkpointSettings, checkpointStore, (eventData, checkpoint) -> {
             UserPurchaseProto userPurchase = UserPurchaseProto.parseFrom(eventData.getBody());
             return new CustomElementWrapper(userPurchase, checkpoint);
         });
@@ -75,15 +73,19 @@ public class EventHubsConsumerFlows {
     getConsumerFlow provide a sample flow of event data into the original UserPurchaseProto, and returns Checkpoint metadata for the sink
      */
     public Flow<CustomElementWrapper, Checkpointable, NotUsed> getConsumerFlow() {
-        AtomicLong counter = new AtomicLong(0L);
+//        AtomicLong counter = new AtomicLong(0L);
         return Flow.<CustomElementWrapper>create()
                 .map(element -> {
+                    UserPurchaseProto userPurchase = element.userPurchaseProto();
+/*
                     if (log.isDebugEnabled() && (counter.incrementAndGet() % 100000) == 0) {
-                        UserPurchaseProto userPurchase = element.userPurchaseProto();
                         log.debug("received purchase event for user {} Product {} Qty {}, Price {}",
                                 userPurchase.getUserId(), userPurchase.getProduct(), userPurchase.getQuantity(), userPurchase.getPrice());
                     }
+*/
                     // TODO: do something with the userPurchase here
+                    log.debug("received purchase event for user {} Product {} Qty {}, Price {}",
+                            userPurchase.getUserId(), userPurchase.getProduct(), userPurchase.getQuantity(), userPurchase.getPrice());
                     return element.checkpointable();
                 });
     }
@@ -92,7 +94,7 @@ public class EventHubsConsumerFlows {
     getConsumerSourceWithContext returns a source of elements as EventData, and carries the checkpoint metadata in the stream's context
      */
     public SourceWithContext<EventData, Checkpointable, Consumer.Control> getConsumerSourceWithContext() {
-        return Consumer.sourceWithCheckpointableContext(consumerSettings, sdkClientBuilder, checkpointSettings, checkpointStore);
+        return Consumer.sourceWithCheckpointableContext(consumerSettings, eventProcessorClientBuilder, checkpointSettings, checkpointStore);
     }
 
     /*

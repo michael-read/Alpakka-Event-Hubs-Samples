@@ -7,11 +7,10 @@ import com.typesafe.config.Config;
 
 public class AzureEHBlobStoreClientBuilderHelper {
 
-    public static BlobContainerAsyncClient getSimpleAsyncClient(Config config) {
+    public static BlobContainerAsyncClient getAsyncClientViaConnectionString(Config config) {
         return new BlobContainerClientBuilder()
-            .connectionString(config.getString("connection-string"))
-            .containerName(config.getString("container-name"))
-            .sasToken(config.getString("sas-token"))
+            .connectionString(config.getString("blob-storage.connection-string"))
+            .containerName(config.getString("blob-storage.container-name"))
             .buildAsyncClient();
     }
 
@@ -19,7 +18,8 @@ public class AzureEHBlobStoreClientBuilderHelper {
         final ClientSecretCredential credentials = AzureClientCredentialBuilderHelper.getClientCredential(config.getConfig("blob-storage"));
         return new BlobContainerClientBuilder()
                 .credential(credentials)
-                .endpoint(config.getString("blob-storage.container-url"))
+                .endpoint(config.getString("blob-storage.endpoint"))
+                .containerName(config.getString("blob-storage.container-name"))
                 .buildAsyncClient();
     }
 

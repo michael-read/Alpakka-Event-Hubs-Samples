@@ -14,7 +14,6 @@ import akka.stream.javadsl.Keep;
 import com.azure.messaging.eventhubs.EventProcessorClientBuilder;
 import com.azure.storage.blob.BlobContainerAsyncClient;
 import com.lightbend.authentication.AzureEHBlobStoreClientBuilderHelper;
-import com.lightbend.authentication.AzureEHConsumerBuilderHelper;
 import com.lightbend.streams.EventHubsConsumerFlows;
 import com.typesafe.config.Config;
 import org.slf4j.Logger;
@@ -35,22 +34,26 @@ public class UserPurchaseConsumerApp {
         return Behaviors.setup(context -> {
 
             Config config = context.getSystem().settings().config();
+            Config eventHubsConfig = config.getConfig("alpakka.azure.eventhubs");
 
-            // Get Configurations - merge with reference.conf default settings
-            Config consumerConfig = config.getConfig("eventhubs-client")
-                    .withFallback(config.getConfig("alpakka.azure.eventhubs"));
+            ConsumerSettings consumerSettings = ConsumerSettings.create(eventHubsConfig.getConfig("consumer"));
 
-            ConsumerSettings consumerSettings = ConsumerSettings.create(consumerConfig.getConfig("consumer"));
-
-            EventProcessorClientBuilder sdkClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorClientServicePrincipal(consumerConfig);
             CheckpointSettings checkpointSettings = CheckpointSettings.create(context.getSystem());
-            BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getServicePrincipalAsyncClient(consumerConfig);
+
+//            BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getServicePrincipalAsyncClient(config.getConfig("alpakka.azure.eventhubs"));
+            BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getAsyncClientViaConnectionString(config.getConfig("alpakka.azure.eventhubs"));
+
+//            EventProcessorClientBuilder sdkClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorClientServicePrincipal(config.getConfig("alpakka.azure.eventhubs"));
+
+            EventProcessorClientBuilder eventProcessorClientBuilder = new EventProcessorClientBuilder()
+                    .connectionString(eventHubsConfig.getString("eventhub.connection-string"), eventHubsConfig.getString("eventhub.hub-name"))
+                    .consumerGroup(eventHubsConfig.getString("consumer.consumer-group"));
 
             EventHubsConsumerFlows eventHubsConsumerFlows = EventHubsConsumerFlows.create(
                     consumerSettings,
                     checkpointSettings,
                     blobContainerAsyncClient,
-                    sdkClientBuilder
+                    eventProcessorClientBuilder
             );
 
             Pair<Consumer.Control, CompletionStage<Done>> result = eventHubsConsumerFlows.getConsumerSource()

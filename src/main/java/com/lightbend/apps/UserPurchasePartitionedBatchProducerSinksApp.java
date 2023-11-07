@@ -28,12 +28,12 @@ public class UserPurchasePartitionedBatchProducerSinksApp {
             Config config = context.getSystem().settings().config();
             int batchedTimeWindowSeconds = config.getInt("app.batched-producer-time-window-seconds");
             int numPartitions = config.getInt("app.number-of-partitions");
-            Config producerConfig = config.getConfig("eventhubs-client.producer");
 
-            // Evemt Hubs Configuration
+            // Event Hubs Producer Configuration
             ProducerSettings producerSettings = ProducerSettings.create(context.getSystem());
-            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(producerConfig);
-//            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerServicePrincipalAsyncClient(producerConfig);
+//            EventHubProducerAsyncClient producerClient = ClientFromConfig.producer(config.getConfig("alpakka.azure.eventhubs.eventhub"));
+//            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(config.getConfig("alpakka.azure.eventhubs"));
+            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerServicePrincipalAsyncClient(config.getConfig("alpakka.azure.eventhubs"));
             EventHubsProducerFlows eventHubsProducerFlows = EventHubsProducerFlows.create(producerSettings, producerClient, batchedTimeWindowSeconds, numPartitions);
 
             final RunnableGraph<NotUsed> runnableGraph =

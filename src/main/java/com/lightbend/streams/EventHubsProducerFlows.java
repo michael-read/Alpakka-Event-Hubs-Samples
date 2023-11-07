@@ -124,8 +124,8 @@ public class EventHubsProducerFlows {
     public Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> getSinglePartitionFlow() {
         return Flow.<UserPurchaseProto>create()
                 .map(purchase -> {
+                    log.debug("Sending message to user {} Product {} Qty {}, Price {}", purchase.getUserId(), purchase.getProduct(), purchase.getQuantity(), purchase.getPrice());
                     EventData eventData = new EventData(purchase.toByteArray());
-//                    return ProducerMessage.singleWithPartitioning(eventData, ProducerMessage.partitionByKey(purchase.getUserId()));
                     return ProducerMessage.single(eventData);
                 });
     }

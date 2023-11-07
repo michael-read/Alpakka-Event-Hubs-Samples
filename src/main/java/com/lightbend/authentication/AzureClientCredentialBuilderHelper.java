@@ -36,5 +36,4 @@ public class AzureClientCredentialBuilderHelper {
                 .build();
     }
 
-
 }

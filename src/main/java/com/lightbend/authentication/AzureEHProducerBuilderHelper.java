@@ -5,8 +5,11 @@ import com.azure.identity.*;
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubProducerAsyncClient;
 import com.typesafe.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AzureEHProducerBuilderHelper {
+    private static final Logger log = LoggerFactory.getLogger(AzureEHProducerBuilderHelper.class);
 
     public static EventHubProducerAsyncClient getEHProducerDefaultAsyncClient(Config config) {
         TokenCredential credential = new DefaultAzureCredentialBuilder()
@@ -21,7 +24,8 @@ public class AzureEHProducerBuilderHelper {
                 .fullyQualifiedNamespace(config.getString("producer.namespace"));
         }
         else {
-            clientBuilder.connectionString(config.getString("eventhub.connection-string"));
+            log.info("connection-string '{}'", config.getString("eventhub.connection-string"));
+            clientBuilder.connectionString(config.getString("eventhub.connection-string"), config.getString("eventhub.hub-name"));
         }
         return clientBuilder.buildAsyncProducerClient();
     }

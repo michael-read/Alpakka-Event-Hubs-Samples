@@ -1,5 +1,6 @@
 package com.lightbend.apps;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
@@ -12,6 +13,8 @@ import com.lightbend.streams.EventHubsProducerFlows;
 import com.typesafe.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.CompletionStage;
 
 public class UserPurchasePartitionedBatchProducerSinksApp {
     private static final Logger log = LoggerFactory.getLogger(UserPurchasePartitionedBatchProducerSinksApp.class);
@@ -38,6 +41,7 @@ public class UserPurchasePartitionedBatchProducerSinksApp {
 
             final RunnableGraph<NotUsed> runnableGraph =
                     RunnableGraph.fromGraph(eventHubsProducerFlows.getPartitionedBatchedSinkedGraph(eventHubsProducerFlows.getUserEventSource()));
+            runnableGraph.run(context.getSystem());
 
             return Behaviors.empty();
         });

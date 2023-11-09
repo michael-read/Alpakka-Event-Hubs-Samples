@@ -73,19 +73,15 @@ public class EventHubsConsumerFlows {
     getConsumerFlow provide a sample flow of event data into the original UserPurchaseProto, and returns Checkpoint metadata for the sink
      */
     public Flow<CustomElementWrapper, Checkpointable, NotUsed> getConsumerFlow() {
-//        AtomicLong counter = new AtomicLong(0L);
+        AtomicLong counter = new AtomicLong(0L);
         return Flow.<CustomElementWrapper>create()
                 .map(element -> {
                     UserPurchaseProto userPurchase = element.userPurchaseProto();
-/*
                     if (log.isDebugEnabled() && (counter.incrementAndGet() % 100000) == 0) {
                         log.debug("received purchase event for user {} Product {} Qty {}, Price {}",
                                 userPurchase.getUserId(), userPurchase.getProduct(), userPurchase.getQuantity(), userPurchase.getPrice());
                     }
-*/
                     // TODO: do something with the userPurchase here
-                    log.debug("received purchase event for user {} Product {} Qty {}, Price {}",
-                            userPurchase.getUserId(), userPurchase.getProduct(), userPurchase.getQuantity(), userPurchase.getPrice());
                     return element.checkpointable();
                 });
     }
@@ -101,13 +97,19 @@ public class EventHubsConsumerFlows {
     getConsumerFlowWithContext provides a sample flow that extracts the EventData into an UserPurchaseProto which is passed downstream/
     */
     public FlowWithContext<EventData, Checkpointable, UserPurchaseProto, Checkpointable, NotUsed> getConsumerFlowWithContext() {
-        AtomicLong counter = new AtomicLong(0L);
+//        AtomicLong counter = new AtomicLong(0L);
         return FlowWithContext.<EventData, Checkpointable>create().map(element -> {
             UserPurchaseProto userPurchase = UserPurchaseProto.parseFrom(element.getBody());
+/*
             if (log.isDebugEnabled() && (counter.incrementAndGet() % 100000) == 0) {
                 log.debug("received purchase event for user {} Product {} Qty {}, Price {}",
                         userPurchase.getUserId(), userPurchase.getProduct(), userPurchase.getQuantity(), userPurchase.getPrice());
             }
+*/
+            // TODO: do something with the userPurchase here
+            log.debug("received purchase event for user {} Product {} Qty {}, Price {}",
+                    userPurchase.getUserId(), userPurchase.getProduct(), userPurchase.getQuantity(), userPurchase.getPrice());
+
             return userPurchase;
         });
     }

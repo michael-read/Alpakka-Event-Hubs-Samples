@@ -35,18 +35,24 @@ public class UserPurchaseConsumerWithContextApp {
         return Behaviors.setup(context -> {
 
             // Get Configurations
-            Config consumerConfig = context.getSystem().settings().config().getConfig("consumer-eventhubs");
+            Config config = context.getSystem().settings().config();
+            Config eventHubsConfig = config.getConfig("alpakka.azure.eventhubs");
 
-            ConsumerSettings consumerSettings = ConsumerSettings.create(consumerConfig);
-            EventProcessorClientBuilder sdkClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorClientServicePrincipal(consumerConfig);
+            ConsumerSettings consumerSettings = ConsumerSettings.create(eventHubsConfig.getConfig("consumer"));
+
             CheckpointSettings checkpointSettings = CheckpointSettings.create(context.getSystem());
-            BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getServicePrincipalAsyncClient(consumerConfig);
+
+//            BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getServicePrincipalAsyncClient(config.getConfig("alpakka.azure.eventhubs"));
+            BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getAsyncClientViaConnectionString(config.getConfig("alpakka.azure.eventhubs"));
+
+//            EventProcessorClientBuilder sdkClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorClientServicePrincipal(config.getConfig("alpakka.azure.eventhubs"));
+            EventProcessorClientBuilder eventProcessorClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorViaConnectionString(eventHubsConfig);
 
             EventHubsConsumerFlows eventHubsConsumerFlows = EventHubsConsumerFlows.create(
                     consumerSettings,
                     checkpointSettings,
                     blobContainerAsyncClient,
-                    sdkClientBuilder
+                    eventProcessorClientBuilder
             );
 
             Pair<Consumer.Control, CompletionStage<Done>> result =

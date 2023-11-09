@@ -5,6 +5,7 @@ import akka.NotUsed;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.stream.alpakka.azure.eventhubs.ProducerMessage;
 import akka.stream.alpakka.azure.eventhubs.javadsl.ProducerSettings;
 import com.azure.messaging.eventhubs.EventHubProducerAsyncClient;
 import com.lightbend.authentication.AzureEHProducerBuilderHelper;
@@ -37,15 +38,15 @@ public class UserPurchaseBatchProducerApp {
             // Event Hubs Producer Configuration
             ProducerSettings producerSettings = ProducerSettings.create(context.getSystem());
 //            EventHubProducerAsyncClient producerClient = ClientFromConfig.producer(config.getConfig("alpakka.azure.eventhubs.eventhub"));
-//            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(config.getConfig("alpakka.azure.eventhubs"));
-            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerServicePrincipalAsyncClient(config.getConfig("alpakka.azure.eventhubs"));
+            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerDefaultAsyncClient(config.getConfig("alpakka.azure.eventhubs"));
+//            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerServicePrincipalAsyncClient(config.getConfig("alpakka.azure.eventhubs"));
             EventHubsProducerFlows eventHubsProducerFlows = EventHubsProducerFlows.create(producerSettings, producerClient, batchedTimeWindowSeconds, numPartitions);
 
             // Primary Stream
             CompletionStage<Done> done =
                     eventHubsProducerFlows.getUserEventSource()
                             .via(LogThrottleFlows.create().getThrottledAndLogEachUserPurchaseProto())
-                            .via(eventHubsProducerFlows.createSinglePartitionBatchedFlow())
+                            .via(eventHubsProducerFlows.createSimpleBatcher())
                             .runWith(eventHubsProducerFlows.createProducerSink().async(), context.getSystem());
 
             // tear down

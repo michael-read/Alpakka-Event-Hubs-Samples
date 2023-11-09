@@ -25,7 +25,10 @@ public class EventHubsProducerFlows {
 
     private static final Logger log = LoggerFactory.getLogger(EventHubsProducerFlows.class);
 
-    private final int MEGA_BYTE = 1024*1024;
+    /*
+    Event Hubs only allows a max of one megabyte per batch, we're just testing with 20 kb
+     */
+    private final int TWENTY_K = 20*1024;
     private final int PER_ELEMENT_OVERHEAD = 16; // bytes of overhead per element
 
     private final ProducerSettings producerSettings;
@@ -74,7 +77,7 @@ public class EventHubsProducerFlows {
         AtomicLong counter = new AtomicLong(0L);
 
 //        return Source.repeat(NotUsed.getInstance())   // creates a never ending stream
-        return Source.range(1, 100)
+        return Source.range(1, 1000000)
                 .map((notUsed) -> {
                     String randomEntityId = Integer.valueOf(random.nextInt(nrUsers)).toString();
                     long price = random.nextInt(maxPrice);
@@ -106,12 +109,12 @@ public class EventHubsProducerFlows {
      */
     Sink<UserPurchaseProto, CompletionStage<Done>> createPartitionedBatchSink(String partition) {
         return Flow.<UserPurchaseProto>create()
-            .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
-            .mapConcat(eList -> eList.stream()
-                    .collect(Collectors.groupingBy(UserPurchaseProto::getUserId))
-                    .entrySet())
-            .map(entrySet -> {
-                List<EventData> events = entrySet.getValue().stream().map(e -> new EventData(e.toByteArray())).toList();
+            .groupedWeightedWithin(TWENTY_K, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
+            .map(listOfUserPurchaseProto -> {
+                List<EventData> events = listOfUserPurchaseProto.stream().map(e -> new EventData(e.toByteArray())).toList();
+                if (log.isDebugEnabled()) {
+                    log.debug("createPartitionedBatchSink Sending batch of {} messages for partition {} ...", events.size(), partition);
+                }
                 return ProducerMessage.batchWithPartitioning(events, ProducerMessage.explicitPartitioning(partition));
             })
             .via(Producer.flow(producerSettings, producerClient))
@@ -124,32 +127,26 @@ public class EventHubsProducerFlows {
     public Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> getSinglePartitionFlow() {
         return Flow.<UserPurchaseProto>create()
                 .map(purchase -> {
-                    log.debug("Sending message to user {} Product {} Qty {}, Price {}", purchase.getUserId(), purchase.getProduct(), purchase.getQuantity(), purchase.getPrice());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Sending message to user {} Product {} Qty {}, Price {}", purchase.getUserId(), purchase.getProduct(), purchase.getQuantity(), purchase.getPrice());
+                    }
                     EventData eventData = new EventData(purchase.toByteArray());
                     return ProducerMessage.single(eventData);
                 });
     }
 
     /*
-    createSinglePartitionBatchedFlow collects events into a batch for a single partition and emits downstream when the size or time window has been reached.
+    createSimpleBatcher collects events into a batch for a single partition and emits downstream when the size or time window has been reached.
      */
-    public Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> createSinglePartitionBatchedFlow() {
+    public Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> createSimpleBatcher() {
         return Flow.<UserPurchaseProto>create()
-                .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
-                .mapConcat(eList -> eList.stream()
-                        .collect(Collectors.groupingBy(UserPurchaseProto::getUserId))
-                        .entrySet()
-                )
-                .map(entrySet -> {
-                    List<EventData> events = entrySet.getValue().stream().map(e -> new EventData(e.toByteArray())).toList();
+                .groupedWeightedWithin(TWENTY_K, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
+                .map(listOfUserPurchaseProto -> {
+                    List<EventData> events = listOfUserPurchaseProto.stream().map(e -> new EventData(e.toByteArray())).toList();
+                    if (log.isDebugEnabled()) {
+                        log.debug("createSimpleBatcher created batch with {} msgs ...", events.size());
+                    }
                     return ProducerMessage.batch(events);
-/*
-                                For Round Robin partitioning you could use the following instead of the pain .batch(events) above:
-
-                                return ProducerMessage.batchWithPartitioning(events, ProducerMessage.roundRobinPartitioning());
-
-                                However, it worth noting that if there's a need to maintain message ordering this is probably not the way to go.
-*/
                 });
     }
 
@@ -158,12 +155,12 @@ public class EventHubsProducerFlows {
      */
     public Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> createPartitionedBatchFlow(String partition) {
         return Flow.<UserPurchaseProto>create()
-                .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
-                .mapConcat(eList -> eList.stream()
-                        .collect(Collectors.groupingBy(UserPurchaseProto::getUserId))
-                        .entrySet())
-                .map(entrySet -> {
-                    List<EventData> events = entrySet.getValue().stream().map(e -> new EventData(e.toByteArray())).toList();
+                .groupedWeightedWithin(TWENTY_K, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
+                .map(listOfUserPurchaseProto -> {
+                    List<EventData> events = listOfUserPurchaseProto.stream().map(e -> new EventData(e.toByteArray())).toList();
+                    if (log.isDebugEnabled()) {
+                        log.debug("createPartitionedBatchFlow created batch with {} msgs for partition {} ...", events.size(), partition);
+                    }
                     return ProducerMessage.batchWithPartitioning(events, ProducerMessage.explicitPartitioning(partition));
                 });
     }

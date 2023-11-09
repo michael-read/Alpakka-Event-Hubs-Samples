@@ -9,6 +9,15 @@ import com.typesafe.config.Config;
 
 public class AzureEHConsumerBuilderHelper {
 
+    public static EventProcessorClientBuilder getEventProcessorViaConnectionString(Config config) {
+        return new EventProcessorClientBuilder()
+                .connectionString(
+                        config.getString("eventhub.connection-string"),
+                        config.getString("eventhub.hub-name")
+                )
+                .consumerGroup(config.getString("consumer.consumer-group"));
+    }
+
     public static EventProcessorClientBuilder getEventProcessorClientServicePrincipal(Config config) {
         final ClientSecretCredential credentials = AzureClientCredentialBuilderHelper.getClientCredential(config.getConfig("consumer"));
         return new EventProcessorClientBuilder()

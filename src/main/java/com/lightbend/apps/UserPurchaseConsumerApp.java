@@ -14,6 +14,7 @@ import akka.stream.javadsl.Keep;
 import com.azure.messaging.eventhubs.EventProcessorClientBuilder;
 import com.azure.storage.blob.BlobContainerAsyncClient;
 import com.lightbend.authentication.AzureEHBlobStoreClientBuilderHelper;
+import com.lightbend.authentication.AzureEHConsumerBuilderHelper;
 import com.lightbend.streams.EventHubsConsumerFlows;
 import com.typesafe.config.Config;
 import org.slf4j.Logger;
@@ -44,10 +45,7 @@ public class UserPurchaseConsumerApp {
             BlobContainerAsyncClient blobContainerAsyncClient = AzureEHBlobStoreClientBuilderHelper.getAsyncClientViaConnectionString(config.getConfig("alpakka.azure.eventhubs"));
 
 //            EventProcessorClientBuilder sdkClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorClientServicePrincipal(config.getConfig("alpakka.azure.eventhubs"));
-
-            EventProcessorClientBuilder eventProcessorClientBuilder = new EventProcessorClientBuilder()
-                    .connectionString(eventHubsConfig.getString("eventhub.connection-string"), eventHubsConfig.getString("eventhub.hub-name"))
-                    .consumerGroup(eventHubsConfig.getString("consumer.consumer-group"));
+            EventProcessorClientBuilder eventProcessorClientBuilder = AzureEHConsumerBuilderHelper.getEventProcessorViaConnectionString(eventHubsConfig);
 
             EventHubsConsumerFlows eventHubsConsumerFlows = EventHubsConsumerFlows.create(
                     consumerSettings,

@@ -105,23 +105,6 @@ public class EventHubsProducerFlows {
     }
 
     /*
-    createPartitionedBatchSink collects event into a batch and emits to the connector when the size or time window has been reached.
-     */
-    Sink<UserPurchaseProto, CompletionStage<Done>> createPartitionedBatchSink(String partition) {
-        return Flow.<UserPurchaseProto>create()
-            .groupedWeightedWithin(TWENTY_K, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
-            .map(listOfUserPurchaseProto -> {
-                List<EventData> events = listOfUserPurchaseProto.stream().map(e -> new EventData(e.toByteArray())).toList();
-                if (log.isDebugEnabled()) {
-                    log.debug("createPartitionedBatchSink Sending batch of {} messages for partition {} ...", events.size(), partition);
-                }
-                return ProducerMessage.batchWithPartitioning(events, ProducerMessage.explicitPartitioning(partition));
-            })
-            .via(Producer.flow(producerSettings, producerClient))
-            .toMat(Sink.ignore(),Keep.right());
-    }
-
-    /*
     getSinglePartitionFlow converts UserPurchaseProto data into EventData and places into a single Producer Envelope.
      */
     public Flow<UserPurchaseProto, ProducerMessage.Envelope<NotUsed>, NotUsed> getSinglePartitionFlow() {
@@ -207,6 +190,23 @@ public class EventHubsProducerFlows {
                     return ClosedShape.getInstance();
                 }
         );
+    }
+
+    /*
+    createPartitionedBatchSink collects event into a batch and emits to the connector when the size or time window has been reached.
+     */
+    Sink<UserPurchaseProto, CompletionStage<Done>> createPartitionedBatchSink(String partition) {
+        return Flow.<UserPurchaseProto>create()
+                .groupedWeightedWithin(TWENTY_K, e -> (long) e.toByteArray().length + PER_ELEMENT_OVERHEAD, Duration.ofSeconds(batchedTimeWindowSeconds))
+                .map(listOfUserPurchaseProto -> {
+                    List<EventData> events = listOfUserPurchaseProto.stream().map(e -> new EventData(e.toByteArray())).toList();
+                    if (log.isDebugEnabled()) {
+                        log.debug("createPartitionedBatchSink Sending batch of {} messages for partition {} ...", events.size(), partition);
+                    }
+                    return ProducerMessage.batchWithPartitioning(events, ProducerMessage.explicitPartitioning(partition));
+                })
+                .via(Producer.flow(producerSettings, producerClient))
+                .toMat(Sink.ignore(),Keep.right());
     }
 
     /*

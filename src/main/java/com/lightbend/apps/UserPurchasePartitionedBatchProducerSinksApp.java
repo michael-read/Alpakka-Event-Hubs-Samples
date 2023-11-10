@@ -14,7 +14,10 @@ import com.typesafe.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 public class UserPurchasePartitionedBatchProducerSinksApp {
     private static final Logger log = LoggerFactory.getLogger(UserPurchasePartitionedBatchProducerSinksApp.class);
@@ -23,6 +26,16 @@ public class UserPurchasePartitionedBatchProducerSinksApp {
 
     public static Behavior<NotUsed> createGuardian() {
         return Behaviors.setup(context -> new UserPurchasePartitionedBatchProducerSinksApp().init());
+    }
+
+    public <T> CompletableFuture<List<T>> allOf(List<CompletableFuture<T>> futuresList) {
+        CompletableFuture<Void> allFuturesResult =
+                CompletableFuture.allOf(futuresList.toArray(new CompletableFuture[0]));
+        return allFuturesResult.thenApply(v ->
+                futuresList.stream().
+                        map(CompletableFuture::join).
+                        collect(Collectors.<T>toList())
+        );
     }
 
     private Behavior<NotUsed> init() {
@@ -39,9 +52,17 @@ public class UserPurchasePartitionedBatchProducerSinksApp {
 //            EventHubProducerAsyncClient producerClient = AzureEHProducerBuilderHelper.getEHProducerServicePrincipalAsyncClient(config.getConfig("alpakka.azure.eventhubs"));
             EventHubsProducerFlows eventHubsProducerFlows = EventHubsProducerFlows.create(producerSettings, producerClient, batchedTimeWindowSeconds, numPartitions);
 
-            final RunnableGraph<NotUsed> runnableGraph =
+            final RunnableGraph<List<CompletionStage<Done>>> runnableGraph =
                     RunnableGraph.fromGraph(eventHubsProducerFlows.getPartitionedBatchedSinkedGraph(eventHubsProducerFlows.getUserEventSource()));
-            runnableGraph.run(context.getSystem());
+
+            List<CompletionStage<Done>> results = runnableGraph.run(context.getSystem());
+
+            // convert to completable futures so we can use allOf
+            List<CompletableFuture<Done>> futuresList = results.stream().map(cs -> cs.toCompletableFuture()).toList();
+
+            // wait for all the completable futures to finish
+            allOf(futuresList).join();
+            context.getSystem().terminate();
 
             return Behaviors.empty();
         });

@@ -77,7 +77,7 @@ public class EventHubsProducerFlows {
         AtomicLong counter = new AtomicLong(0L);
 
 //        return Source.repeat(NotUsed.getInstance())   // creates a never ending stream
-        return Source.range(1, 1000000)
+        return Source.range(1, 100)
                 .map((notUsed) -> {
                     String randomEntityId = Integer.valueOf(random.nextInt(nrUsers)).toString();
                     long price = random.nextInt(maxPrice);
@@ -212,19 +212,27 @@ public class EventHubsProducerFlows {
     /*
     getPartitionedBatchedSinkedGraph returns a graph that fans out and collects batches by partition, and finally emits to sink per partition
      */
-    public Graph<ClosedShape, NotUsed> getPartitionedBatchedSinkedGraph(Source<UserPurchaseProto, NotUsed> source) {
+    public Graph<ClosedShape, List<CompletionStage<Done>>> getPartitionedBatchedSinkedGraph(Source<UserPurchaseProto, NotUsed> source) {
+        final List<Sink<UserPurchaseProto, CompletionStage<Done>>> partitionSinks = new ArrayList<>();
+        for (int i = 0; i < numPartitions; i++) {
+            final Sink<UserPurchaseProto, CompletionStage<Done>> sink = createPartitionedBatchSink(String.valueOf(i)).async();
+            partitionSinks.add(sink);
+        }
         return GraphDSL.create(
-                builder -> {
+                partitionSinks,
+                (GraphDSL.Builder<List<CompletionStage<Done>>> builder,
+                 List<SinkShape<UserPurchaseProto>> outs) -> {
                     final UniformFanOutShape<UserPurchaseProto, UserPurchaseProto> partition =
                             builder.add(
                                     Partition.create(
                                             UserPurchaseProto.class, numPartitions, userPurchase -> (Math.abs(userPurchase.getUserId().hashCode()) % numPartitions)));
                     builder.from(builder.add(source)).viaFanOut(partition);
-                    for (int i = 0; i < numPartitions; i++) {
-                        builder.from(partition.out(i)).to(builder.add(createPartitionedBatchSink(String.valueOf(i)).async()));
+
+                    for (SinkShape<UserPurchaseProto> sink : outs) {
+                        builder.from(partition).to(sink);
                     }
+
                     return ClosedShape.getInstance();
                 });
     }
-
 }

@@ -60,7 +60,7 @@ SERVICE_PRINCIPAL_TENANT_ID (Optional)
 
 The checkpoint store is used to save position of the last element read. This is important when restarting a consumer so that the application can pick up where it left off.
 
-CHECKPOINT_STORE_CONNECTION_STRING - 
+CHECKPOINT_STORE_CONNECTION_STRING - the access key for the given storage account hosting the containers hosting the checkpoint blob store.
 
 CHECKPOINT_STORE_CONTAINER_NAME - container name used for the unique checkpoint store.
 

@@ -37,7 +37,9 @@ EVENT_HUBS_HUB_NAME - This is synonymous with a Kafka topic name.
 EVENT_HUBS_NAMESPACE (Optional) - normally in the format of `<eventhubs-namespace>.servicebus.windows.net`. This setting wasn't successfully tested where it might be used with service principals for Azure connectivity.
 
 SERVICE_PRINCIPAL_CLIENT_ID (Optional)
+
 SERVICE_PRINCIPAL_CLIENT_SECRET (Optional)
+
 SERVICE_PRINCIPAL_TENANT_ID (Optional)
 
 ### Consumer Settings
@@ -49,7 +51,9 @@ The following settings are only used if no connection string is provided for the
 EVENT_HUBS_NAMESPACE (Optional) - normally in the format of `<eventhubs-namespace>.servicebus.windows.net`. This setting wasn't successfully tested where it might be used to create credentials for Azure connectivity.
 
 SERVICE_PRINCIPAL_CLIENT_ID (Optional)
+
 SERVICE_PRINCIPAL_CLIENT_SECRET (Optional)
+
 SERVICE_PRINCIPAL_TENANT_ID (Optional)
 
 ### Consumer Checkpoint Store (Blob Storage) Settings
@@ -61,5 +65,7 @@ CHECKPOINT_STORE_CONNECTION_STRING -
 CHECKPOINT_STORE_CONTAINER_NAME - container name used for the unique checkpoint store.
 
 SERVICE_PRINCIPAL_CLIENT_ID (Optional)
+
 SERVICE_PRINCIPAL_CLIENT_SECRET (Optional)
+
 SERVICE_PRINCIPAL_TENANT_ID (Optional)

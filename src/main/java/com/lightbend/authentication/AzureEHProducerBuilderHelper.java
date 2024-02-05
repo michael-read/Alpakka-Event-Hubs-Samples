@@ -12,14 +12,13 @@ public class AzureEHProducerBuilderHelper {
     private static final Logger log = LoggerFactory.getLogger(AzureEHProducerBuilderHelper.class);
 
     public static EventHubProducerAsyncClient getEHProducerDefaultAsyncClient(Config config) {
-        TokenCredential credential = new DefaultAzureCredentialBuilder()
-                .build();
+        DefaultAzureCredential defaultCredential = new DefaultAzureCredentialBuilder().build();
         // "<<fully-qualified-namespace>>" will look similar to "{your-namespace}.servicebus.windows.net"
         // "<<event-hub-name>>" will be the name of the Event Hub instance you created inside the Event Hubs namespace.
         var clientBuilder = new EventHubClientBuilder();
         if (config.getString("eventhub.connection-string").isEmpty()) {
             clientBuilder
-                .credential(credential)
+                .credential(defaultCredential)
                 .eventHubName(config.getString("eventhub.hub-name"))
                 .fullyQualifiedNamespace(config.getString("producer.namespace"));
         }

@@ -12,9 +12,9 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <akka.version>2.8.4</akka.version>
-        <akka.grpc.version>2.3.0</akka.grpc.version>
-        <grpc.version>1.54.2</grpc.version>
+        <akka.version>2.9.1</akka.version>
+        <akka.grpc.version>2.4.0</akka.grpc.version>
+        <grpc.version>1.58.0</grpc.version>
         <alpakka.eventhubs.version>2.0.0-M5</alpakka.eventhubs.version>
         <project.encoding>UTF-8</project.encoding>
         <scala.binary.version>2.13</scala.binary.version>
